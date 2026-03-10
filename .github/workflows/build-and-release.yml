@@ -25,11 +25,10 @@ jobs:
             binary: RegexTester
             smoke_test: true
 
-          # Cross-compiled on x64; smoke-test skipped (can't run arm64 binaries on x64 host)
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             rid: linux-arm64
             binary: RegexTester
-            smoke_test: false
+            smoke_test: true
 
           - os: macos-13
             rid: osx-x64

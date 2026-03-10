@@ -31,10 +31,6 @@ jobs:
             rid: linux-arm64
             smoke_test: true
 
-          - os: macos-13
-            rid: osx-x64
-            smoke_test: true
-
           - os: macos-14
             rid: osx-arm64
             smoke_test: true

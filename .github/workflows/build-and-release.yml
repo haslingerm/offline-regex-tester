@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: build-and-release-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build ${{ matrix.rid }}
@@ -17,27 +21,22 @@ jobs:
         include:
           - os: windows-latest
             rid: win-x64
-            binary: RegexTester.exe
             smoke_test: true
 
           - os: ubuntu-latest
             rid: linux-x64
-            binary: RegexTester
             smoke_test: true
 
           - os: ubuntu-24.04-arm
             rid: linux-arm64
-            binary: RegexTester
             smoke_test: true
 
           - os: macos-13
             rid: osx-x64
-            binary: RegexTester
             smoke_test: true
 
           - os: macos-14
             rid: osx-arm64
-            binary: RegexTester
             smoke_test: true
 
     runs-on: ${{ matrix.os }}
@@ -73,8 +72,16 @@ jobs:
           APP_PID=$!
           sleep 5
           if kill -0 "$APP_PID" 2>/dev/null; then
-            kill "$APP_PID"
             echo "✓ App is still running after 5 s – smoke test passed"
+            kill "$APP_PID"
+            for i in {1..10}; do
+              kill -0 "$APP_PID" 2>/dev/null || break
+              sleep 1
+            done
+            if kill -0 "$APP_PID" 2>/dev/null; then
+              kill -9 "$APP_PID" 2>/dev/null || true
+            fi
+            wait "$APP_PID" 2>/dev/null || true
           else
             wait "$APP_PID"
             echo "✗ App exited prematurely (exit code: $?)"
@@ -91,8 +98,16 @@ jobs:
           APP_PID=$!
           sleep 5
           if kill -0 "$APP_PID" 2>/dev/null; then
-            kill "$APP_PID"
             echo "✓ App is still running after 5 s – smoke test passed"
+            kill "$APP_PID"
+            for i in {1..10}; do
+              kill -0 "$APP_PID" 2>/dev/null || break
+              sleep 1
+            done
+            if kill -0 "$APP_PID" 2>/dev/null; then
+              kill -9 "$APP_PID" 2>/dev/null || true
+            fi
+            wait "$APP_PID" 2>/dev/null || true
           else
             wait "$APP_PID"
             echo "✗ App exited prematurely (exit code: $?)"

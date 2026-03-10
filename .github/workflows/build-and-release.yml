@@ -1,0 +1,174 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.rid }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            binary: RegexTester.exe
+            smoke_test: true
+
+          - os: ubuntu-latest
+            rid: linux-x64
+            binary: RegexTester
+            smoke_test: true
+
+          # Cross-compiled on x64; smoke-test skipped (can't run arm64 binaries on x64 host)
+          - os: ubuntu-latest
+            rid: linux-arm64
+            binary: RegexTester
+            smoke_test: false
+
+          - os: macos-13
+            rid: osx-x64
+            binary: RegexTester
+            smoke_test: true
+
+          - os: macos-14
+            rid: osx-arm64
+            binary: RegexTester
+            smoke_test: true
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish (${{ matrix.rid }})
+        shell: bash
+        run: |
+          dotnet publish RegexTester/RegexTester.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -o ./publish/${{ matrix.rid }}
+
+      # ── Smoke tests ─────────────────────────────────────────────────────────
+      - name: Smoke test (Linux)
+        if: matrix.smoke_test && runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y --no-install-recommends xvfb
+          Xvfb :99 -screen 0 1920x1080x24 &
+          sleep 2
+          chmod +x ./publish/${{ matrix.rid }}/RegexTester
+          DISPLAY=:99 ./publish/${{ matrix.rid }}/RegexTester &
+          APP_PID=$!
+          sleep 5
+          if kill -0 "$APP_PID" 2>/dev/null; then
+            kill "$APP_PID"
+            echo "✓ App is still running after 5 s – smoke test passed"
+          else
+            wait "$APP_PID"
+            echo "✗ App exited prematurely (exit code: $?)"
+            exit 1
+          fi
+
+      - name: Smoke test (macOS)
+        if: matrix.smoke_test && runner.os == 'macOS'
+        run: |
+          chmod +x ./publish/${{ matrix.rid }}/RegexTester
+          # Remove quarantine attribute that would block an unsigned binary
+          xattr -dr com.apple.quarantine ./publish/${{ matrix.rid }}/RegexTester 2>/dev/null || true
+          ./publish/${{ matrix.rid }}/RegexTester &
+          APP_PID=$!
+          sleep 5
+          if kill -0 "$APP_PID" 2>/dev/null; then
+            kill "$APP_PID"
+            echo "✓ App is still running after 5 s – smoke test passed"
+          else
+            wait "$APP_PID"
+            echo "✗ App exited prematurely (exit code: $?)"
+            exit 1
+          fi
+
+      - name: Smoke test (Windows)
+        if: matrix.smoke_test && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $proc = Start-Process `
+            -FilePath ".\publish\${{ matrix.rid }}\RegexTester.exe" `
+            -PassThru
+          Start-Sleep -Seconds 5
+          if ($proc.HasExited) {
+            Write-Error "✗ App exited prematurely (exit code: $($proc.ExitCode))"
+            exit 1
+          }
+          $proc.Kill()
+          Write-Host "✓ App is still running after 5 s – smoke test passed"
+
+      # ── Collect artifact ─────────────────────────────────────────────────────
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cp "./publish/${{ matrix.rid }}/RegexTester.exe" "dist/RegexTester-${{ matrix.rid }}.exe"
+          else
+            cp "./publish/${{ matrix.rid }}/RegexTester" "dist/RegexTester-${{ matrix.rid }}"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RegexTester-${{ matrix.rid }}
+          path: dist/
+          # Temporary – only kept long enough for the release job to consume
+          retention-days: 1
+
+  # ── Rolling "latest-build" release ─────────────────────────────────────────
+  release:
+    name: Publish latest-build release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -lh dist/
+
+      - name: Delete previous latest-build release (if exists)
+        run: gh release delete latest-build --yes 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete previous latest-build tag (if exists)
+        run: git push --delete origin latest-build 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create latest-build release
+        run: |
+          COMMIT_URL="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          TIMESTAMP=$(date -u +'%Y-%m-%d %H:%M UTC')
+          gh release create latest-build \
+            --title "Latest Build" \
+            --notes "Automatically built from [\`${{ github.sha }}\`]($COMMIT_URL) on $TIMESTAMP." \
+            dist/*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,148 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RegexTester.ViewModels"
+             x:Class="RegexTester.Views.RegexToolbox"
+             x:Name="Root"
+             x:DataType="vm:RegexToolboxViewModel"
+
+             MinWidth="320"
+             Background="#1a1b2e">
+    <UserControl.Resources>
+        <vm:CategoryActiveBackgroundConverter x:Key="CategoryActiveBackgroundConverter" />
+        <vm:CategoryActiveForegroundConverter x:Key="CategoryActiveForegroundConverter" />
+    </UserControl.Resources>
+    <Grid RowDefinitions="Auto,*">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MinWidth="80" MaxWidth="210"/>
+            <ColumnDefinition Width="1"/>
+            <ColumnDefinition Width="*" MinWidth="180"/>
+        </Grid.ColumnDefinitions>
+        <TextBox Grid.Row="0"
+                 Grid.ColumnSpan="3"
+                 Name="SearchBox"
+                 Watermark="Search tokens..."
+                 Margin="8,8,8,6"
+                 FontFamily="Cascadia Code,Fira Code,Consolas,monospace"
+                 FontSize="13"
+                 Background="#252637"
+                 Foreground="#f8f8f2"
+                 BorderBrush="#44475a"
+                 CaretBrush="#f8f8f2"
+                 SelectionBrush="#44475a"
+                 Padding="8,5"
+                 Text="{Binding SearchText, Mode=TwoWay}" />
+
+        <Border Grid.Row="1" Grid.Column="0" Background="#23243a" >
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ListBox ItemsSource="{Binding Categories}"
+                         SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                         Background="Transparent"
+                         BorderThickness="0">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Margin" Value="0" />
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderBrush" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
+                        </Style>
+                        <Style Selector="ListBoxItem:selected">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderBrush" Value="Transparent" />
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:RegexToolboxCategory">
+                            <Border Margin="4,2"
+                                    Padding="8,6"
+                                    CornerRadius="5"
+                                    Background="{Binding IsActive, Converter={StaticResource CategoryActiveBackgroundConverter}}">
+                                <Grid ColumnDefinitions="16,*,12" VerticalAlignment="Center">
+                                    <Path Grid.Column="0"
+                                          Data="{Binding IconPathData}"
+                                          Stroke="{Binding IsActive, Converter={StaticResource CategoryActiveForegroundConverter}}"
+                                          StrokeThickness="1.7"
+                                          Width="14"
+                                          Height="14"
+                                          Stretch="Uniform" />
+                                    <TextBlock Grid.Column="1"
+                                               Margin="8,0,4,0"
+                                               Text="{Binding Label}"
+                                               Foreground="{Binding IsActive, Converter={StaticResource CategoryActiveForegroundConverter}}"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <Path Grid.Column="2"
+                                          IsVisible="{Binding IsActive}"
+                                          Data="M20 6 L9 17 L4 12"
+                                          Stroke="#bd93f9"
+                                          StrokeThickness="2"
+                                          Width="12"
+                                          Height="12"
+                                          Stretch="Uniform" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </ScrollViewer>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="1" Background="#44475a" />
+
+        <Border Grid.Row="1" Grid.Column="2" Background="#1a1b2e">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding FilteredTokens}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:RegexToolboxToken">
+                            <Button Command="{Binding InsertTokenCommand, DataType=vm:RegexToolboxViewModel}"
+                                    CommandParameter="{Binding Syntax}"
+                                    HorizontalAlignment="Stretch"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="0"
+                                    Margin="0">
+                                <Border Margin="6,3"
+                                        Padding="8,7"
+                                        CornerRadius="5"
+                                        BorderBrush="#30344a"
+                                        BorderThickness="1"
+                                        Background="#23243a">
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Label}"
+                                                   Foreground="#f8f8f2"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   TextWrapping="Wrap" />
+                                        <Border Grid.Column="1"
+                                                Grid.RowSpan="2"
+                                                Margin="8,0,0,0"
+                                                Background="#252637"
+                                                CornerRadius="4"
+                                                Padding="6,2"
+                                                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Syntax}"
+                                                       Foreground="#50fa7b"
+                                                       FontFamily="Cascadia Code,Fira Code,Consolas,monospace"
+                                                       FontSize="12" />
+                                        </Border>
+                                        <TextBlock Grid.Column="0"
+                                                   Grid.Row="1"
+                                                   Margin="0,2,0,0"
+                                                   Text="{Binding Tooltip}"
+                                                   Foreground="#6272a4"
+                                                   FontSize="10"
+                                                   TextWrapping="Wrap" />
+                                    </Grid>
+                                </Border>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>
+

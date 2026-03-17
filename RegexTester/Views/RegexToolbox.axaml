@@ -20,7 +20,7 @@
     </UserControl.Resources>
     <Grid RowDefinitions="Auto,*">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" MinWidth="80" MaxWidth="210"/>
+            <ColumnDefinition Width="*" MinWidth="80" MaxWidth="190"/>
             <ColumnDefinition Width="1"/>
             <ColumnDefinition Width="*" MinWidth="180"/>
         </Grid.ColumnDefinitions>

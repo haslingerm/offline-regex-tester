@@ -130,11 +130,17 @@
             </StackPanel>
         </Border>
 
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="{Binding LeftSidebarColumnWidth, Mode=TwoWay}" />
+                <ColumnDefinition Width="{Binding LeftSplitterColumnWidth}" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="{Binding RightSplitterColumnWidth}" />
+                <ColumnDefinition Width="{Binding RightSidebarColumnWidth, Mode=TwoWay}" />
+            </Grid.ColumnDefinitions>
 
             <!-- LEFT: Regex Toolbox -->
             <Border Grid.Column="0"
-                    Width="320"
                     IsVisible="{Binding IsLeftSidebarOpen}">
                 <views:RegexToolbox Background="#1a1b2e" />
             </Border>
@@ -200,7 +206,6 @@
 
             <!-- RIGHT: Match Information -->
             <Grid Grid.Column="4"
-                  Width="360"
                   IsVisible="{Binding IsRightSidebarOpen}"
                   RowDefinitions="Auto,*">
                 <Border Grid.Row="0" Background="#1e1f2e" Padding="12,6">

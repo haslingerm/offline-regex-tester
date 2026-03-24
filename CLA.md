@@ -6,7 +6,7 @@ Contributor License Agreement (CLA).
 ## Context
 
 **Offline Regex Tester** is a free, purely open-source project maintained by
-**Markus Haslinger**. There is no commercial use of this project whatsoever.
+Markus Haslinger. There is no commercial use of this project whatsoever.
 All code — including every contribution — is released under the
 [MIT License](LICENSE) and will remain so.
 
@@ -16,7 +16,7 @@ under that same MIT License.
 
 ## License Grant
 
-You grant **Markus Haslinger** a perpetual, worldwide, non-exclusive, no-charge,
+You grant Markus Haslinger a perpetual, worldwide, non-exclusive, no-charge,
 royalty-free, irrevocable license to use, reproduce, modify, prepare derivative
 works of, publicly display, publicly perform, sublicense, and distribute your
 contribution as part of this project, under the terms of the
@@ -29,7 +29,7 @@ commercial purpose.
 ## Patent Grant
 
 To the extent your contribution is covered by patents you hold or control, you
-grant **Markus Haslinger** and all recipients of this project a perpetual,
+grant Markus Haslinger and all recipients of this project a perpetual,
 worldwide, non-exclusive, no-charge, royalty-free, irrevocable patent license
 to make, use, sell, import, and otherwise transfer your contribution as part of
 this project.

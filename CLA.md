@@ -10,6 +10,9 @@ Markus Haslinger. There is no commercial use of this project whatsoever.
 All code — including every contribution — is released under the
 [MIT License](LICENSE) and will remain so.
 
+Note: the majority of this project's code is intentionally AI-generated.
+If you have an ethical objection to that, you may prefer not to contribute.
+
 The sole purpose of this CLA is to confirm that you have the right to
 contribute and that you are comfortable with your contribution being distributed
 under that same MIT License.

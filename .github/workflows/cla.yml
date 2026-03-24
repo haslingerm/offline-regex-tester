@@ -1,0 +1,41 @@
+name: CLA Assistant
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, closed, synchronize]
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  cla-assistant:
+    name: CLA Assistant
+    runs-on: ubuntu-latest
+    # Only run when a PR comment is made or on PR events (not issue comments on plain issues)
+    if: >
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request != null) ||
+      github.event_name == 'pull_request_target'
+    steps:
+      - name: CLA Assistant
+        uses: contributor-assistant/github-action@v2.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          path-to-signatures: '.github/cla-signatures.json'
+          path-to-document: 'https://github.com/${{ github.repository }}/blob/master/CLA.md'
+          branch: 'master'
+          allowlist: bot*
+          signed-commit-message: >
+            $contributorName has signed the CLA in $owner/$repo#$pullRequestNo
+          custom-notsigned-prcomment: >
+            Thank you for your contribution! Before we can merge this pull request,
+            please sign our [Contributor License Agreement](https://github.com/${{ github.repository }}/blob/master/CLA.md)
+            by commenting:
+
+            > I have read the CLA Document and I hereby sign the CLA
+          custom-pr-sign-comment: 'I have read the CLA Document and I hereby sign the CLA'

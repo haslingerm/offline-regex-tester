@@ -1,16 +1,5 @@
 name: CLA Assistant
 
-# ── Cost / billing notes ────────────────────────────────────────────────────
-# contributor-assistant/github-action is free and open-source (MIT license).
-# This workflow uses only the built-in GITHUB_TOKEN — no paid app or service.
-#
-# Regarding GitHub Actions minutes:
-# - Public repositories receive unlimited free GitHub Actions minutes.
-# - This workflow therefore consumes zero billable minutes for this project.
-# - If the repository were ever made private the minutes would count against
-#   the account quota; the job typically finishes in well under a minute.
-# ────────────────────────────────────────────────────────────────────────────
-
 on:
   issue_comment:
     types: [created]

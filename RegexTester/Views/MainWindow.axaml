@@ -5,6 +5,7 @@
         xmlns:conv="using:RegexTester.Converters"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:RegexTester.Views"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
         x:Class="RegexTester.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -48,6 +49,13 @@
         </Style>
         <Style Selector="ToggleButton.flag:checked">
             <Setter Property="BorderBrush" Value="#bd93f9" />
+        </Style>
+
+        <Style Selector="PathIcon.sidebarToggleIcon">
+            <Setter Property="Foreground" Value="#6272a4" />
+        </Style>
+        <Style Selector="ToggleButton.flag:checked PathIcon.sidebarToggleIcon">
+            <Setter Property="Foreground" Value="#bd93f9" />
         </Style>
 
         <Style Selector="TextBox.mono">
@@ -122,12 +130,58 @@
             </StackPanel>
         </Border>
 
-        <Grid Grid.Row="1" ColumnDefinitions="*,5,*">
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="{Binding LeftSidebarColumnWidth, Mode=TwoWay}" />
+                <ColumnDefinition Width="{Binding LeftSplitterColumnWidth}" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="{Binding RightSplitterColumnWidth}" />
+                <ColumnDefinition Width="{Binding RightSidebarColumnWidth, Mode=TwoWay}" />
+            </Grid.ColumnDefinitions>
 
-            <!-- LEFT: Test string editor -->
-            <Grid Grid.Column="0" RowDefinitions="Auto,*">
+            <!-- LEFT: Regex Toolbox -->
+            <Border Grid.Column="0"
+                    IsVisible="{Binding IsLeftSidebarOpen}">
+                <views:RegexToolbox Background="#1a1b2e" />
+            </Border>
+
+            <GridSplitter Grid.Column="1"
+                          IsVisible="{Binding IsLeftSidebarOpen}"
+                          Width="5"
+                          ResizeDirection="Columns"
+                          Background="#44475a" />
+
+            <!-- MIDDLE: Test String Editor -->
+            <Grid Grid.Column="2" RowDefinitions="Auto,*">
                 <Border Grid.Row="0" Background="#1e1f2e" Padding="12,6">
-                    <TextBlock Text="TEST STRING" Classes="label" />
+                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                        <ToggleButton Grid.Column="0"
+                                      Classes="flag"
+                                      Width="26"
+                                      Height="22"
+                                      IsChecked="{Binding IsLeftSidebarOpen}"
+                                      ToolTip.Tip="Regex Toolbox links ein-/ausklappen">
+                            <PathIcon Classes="sidebarToggleIcon"
+                                      Data="{StaticResource ToolboxIconGeom}"
+                                      Width="14"
+                                      Height="14" />
+                        </ToggleButton>
+                        <TextBlock Grid.Column="1"
+                                   Text="TEST STRING"
+                                   Classes="label"
+                                   HorizontalAlignment="Center" />
+                        <ToggleButton Grid.Column="2"
+                                      Classes="flag"
+                                      Width="26"
+                                      Height="22"
+                                      IsChecked="{Binding IsRightSidebarOpen}"
+                                      ToolTip.Tip="Match Information rechts ein-/ausklappen">
+                            <PathIcon Classes="sidebarToggleIcon"
+                                      Data="{StaticResource MatchResultsIconGeom}"
+                                      Width="14"
+                                      Height="14" />
+                        </ToggleButton>
+                    </Grid>
                 </Border>
                 <TextBox Grid.Row="1"
                          Classes="mono"
@@ -144,12 +198,16 @@
                          ScrollViewer.VerticalScrollBarVisibility="Auto" />
             </Grid>
 
-            <GridSplitter Grid.Column="1"
+            <GridSplitter Grid.Column="3"
+                          IsVisible="{Binding IsRightSidebarOpen}"
+                          Width="5"
                           ResizeDirection="Columns"
                           Background="#44475a" />
 
-            <!-- RIGHT: Match information -->
-            <Grid Grid.Column="2" RowDefinitions="Auto,*">
+            <!-- RIGHT: Match Information -->
+            <Grid Grid.Column="4"
+                  IsVisible="{Binding IsRightSidebarOpen}"
+                  RowDefinitions="Auto,*">
                 <Border Grid.Row="0" Background="#1e1f2e" Padding="12,6">
                     <TextBlock Text="MATCH INFORMATION" Classes="label" />
                 </Border>
@@ -167,8 +225,7 @@
                                         Background="{Binding HasMatch,
                                             Converter={x:Static conv:ValueConverters.MatchRowBackground}}">
                                     <StackPanel Spacing="2">
-
-                                        <!-- Header: dot + line# + line text -->
+                                        <!-- ...existing code... -->
                                         <Grid ColumnDefinitions="14,30,*">
                                             <TextBlock Grid.Column="0"
                                                        Text="{Binding HasMatch,
@@ -193,16 +250,14 @@
                                                        TextTrimming="CharacterEllipsis"
                                                        VerticalAlignment="Top" />
                                         </Grid>
-
-                                        <!-- Per-match details -->
+                                        <!-- ...existing code... -->
                                         <ItemsControl ItemsSource="{Binding Matches}"
                                                       IsVisible="{Binding HasMatch}"
                                                       Margin="24,0,0,0">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="models:MatchResult">
                                                     <StackPanel Spacing="2" Margin="0,2,0,0">
-
-                                                        <!-- Full match -->
+                                                        <!-- ...existing code... -->
                                                         <StackPanel Orientation="Horizontal" Spacing="6">
                                                             <TextBlock Text="Match"
                                                                        Foreground="#6272a4"
@@ -223,8 +278,7 @@
                                                                        FontSize="10"
                                                                        VerticalAlignment="Center" />
                                                         </StackPanel>
-
-                                                        <!-- Capture groups -->
+                                                        <!-- ...existing code... -->
                                                         <ItemsControl ItemsSource="{Binding Groups}"
                                                                       Margin="12,0,0,0">
                                                             <ItemsControl.ItemTemplate>
@@ -252,12 +306,10 @@
                                                                 </DataTemplate>
                                                             </ItemsControl.ItemTemplate>
                                                         </ItemsControl>
-
                                                     </StackPanel>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
-
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>
@@ -351,4 +403,5 @@
         </Grid>
 
     </Grid>
+
 </Window>

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
+using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RegexTester.Models;
@@ -9,6 +10,8 @@ namespace RegexTester.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     private CancellationTokenSource? _explainCts;
+    private double _lastLeftSidebarWidth = 320;
+    private double _lastRightSidebarWidth = 360;
 
     [ObservableProperty]
     private string? _explanationError;
@@ -27,6 +30,24 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isExplaining;
+
+    [ObservableProperty]
+    private bool _isLeftSidebarOpen = true;
+
+    [ObservableProperty]
+    private bool _isRightSidebarOpen = true;
+
+    [ObservableProperty]
+    private GridLength _leftSidebarColumnWidth = new(320, GridUnitType.Pixel);
+
+    [ObservableProperty]
+    private GridLength _leftSplitterColumnWidth = new(5, GridUnitType.Pixel);
+
+    [ObservableProperty]
+    private GridLength _rightSidebarColumnWidth = new(360, GridUnitType.Pixel);
+
+    [ObservableProperty]
+    private GridLength _rightSplitterColumnWidth = new(5, GridUnitType.Pixel);
 
     [ObservableProperty]
     private string _matchSummary = "";
@@ -86,6 +107,48 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         UpdateMatches();
         ScheduleExplain();
+    }
+
+    partial void OnIsLeftSidebarOpenChanged(bool value)
+    {
+        if (value)
+        {
+            LeftSidebarColumnWidth = new GridLength(_lastLeftSidebarWidth, GridUnitType.Pixel);
+            LeftSplitterColumnWidth = new GridLength(5, GridUnitType.Pixel);
+            return;
+        }
+
+        LeftSidebarColumnWidth = new GridLength(0, GridUnitType.Pixel);
+        LeftSplitterColumnWidth = new GridLength(0, GridUnitType.Pixel);
+    }
+
+    partial void OnIsRightSidebarOpenChanged(bool value)
+    {
+        if (value)
+        {
+            RightSidebarColumnWidth = new GridLength(_lastRightSidebarWidth, GridUnitType.Pixel);
+            RightSplitterColumnWidth = new GridLength(5, GridUnitType.Pixel);
+            return;
+        }
+
+        RightSidebarColumnWidth = new GridLength(0, GridUnitType.Pixel);
+        RightSplitterColumnWidth = new GridLength(0, GridUnitType.Pixel);
+    }
+
+    partial void OnLeftSidebarColumnWidthChanged(GridLength value)
+    {
+        if (IsLeftSidebarOpen && value.IsAbsolute && value.Value > 0)
+        {
+            _lastLeftSidebarWidth = value.Value;
+        }
+    }
+
+    partial void OnRightSidebarColumnWidthChanged(GridLength value)
+    {
+        if (IsRightSidebarOpen && value.IsAbsolute && value.Value > 0)
+        {
+            _lastRightSidebarWidth = value.Value;
+        }
     }
 
     private void UpdateMatches()

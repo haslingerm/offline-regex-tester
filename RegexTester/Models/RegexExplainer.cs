@@ -137,10 +137,10 @@ public static class RegexExplainer
     private static async Task<(int exitCode, string output)> RunBuildAsync(CancellationToken ct)
     {
         var result = await Cli.Wrap("dotnet")
-                              .WithArguments(["build", "--nologo", "-v", "quiet"])
-                              .WithWorkingDirectory(scratchDir)
-                              .WithValidation(CommandResultValidation.None)
-                              .ExecuteBufferedAsync(ct);
+            .WithArguments(["build", "--nologo", "-v", "quiet"])
+            .WithWorkingDirectory(scratchDir)
+            .WithValidation(CommandResultValidation.None)
+            .ExecuteBufferedAsync(ct);
 
         var combined = (result.StandardOutput + "\n" + result.StandardError).Trim();
 
@@ -168,8 +168,8 @@ public static class RegexExplainer
         //       System.Text.RegularExpressions.Generator.RegexGenerator/
         //         RegexGenerator.g.cs
         var generatedDir = Path.Combine(scratchDir, "obj", "Debug", "net10.0", "generated",
-                                        "System.Text.RegularExpressions.Generator",
-                                        "System.Text.RegularExpressions.Generator.RegexGenerator");
+            "System.Text.RegularExpressions.Generator",
+            "System.Text.RegularExpressions.Generator.RegexGenerator");
 
         var generatedFile = Path.Combine(generatedDir, "RegexGenerator.g.cs");
 
@@ -177,11 +177,11 @@ public static class RegexExplainer
         {
             // Fallback: glob for any .g.cs that isn't the global usings file
             var found = Directory.GetFiles(Path.Combine(scratchDir, "obj"),
-                                           "*.g.cs",
-                                           SearchOption.AllDirectories);
+                "*.g.cs",
+                SearchOption.AllDirectories);
 
             generatedFile = Array.Find(found,
-                                       f => !f.EndsWith("GlobalUsings.g.cs", StringComparison.OrdinalIgnoreCase))
+                                f => !f.EndsWith("GlobalUsings.g.cs", StringComparison.OrdinalIgnoreCase))
                             ?? string.Empty;
         }
 
@@ -219,10 +219,8 @@ public static class RegexExplainer
                 if (content.TrimEnd() == "<code>"
                     && i > 0
                     && lines[i - 1].TrimStart().TrimStart('/').Trim()
-                                   .StartsWith("Explanation:", StringComparison.OrdinalIgnoreCase))
-                {
+                        .StartsWith("Explanation:", StringComparison.OrdinalIgnoreCase))
                     inCode = true;
-                }
 
                 continue;
             }
@@ -235,9 +233,9 @@ public static class RegexExplainer
 
             // Strip trailing <br/> and whitespace
             var text = content
-                       .Replace("<br/>", "")
-                       .Replace("<br />", "")
-                       .TrimEnd();
+                .Replace("<br/>", "")
+                .Replace("<br />", "")
+                .TrimEnd();
 
             if (string.IsNullOrEmpty(text))
             {
@@ -262,16 +260,26 @@ public sealed class ExplanationResult
     public IReadOnlyList<ExplanationLine> Lines { get; private init; } = [];
     public string? ErrorMessage { get; private init; }
 
-    public static ExplanationResult Ok(List<ExplanationLine> lines) => new() { IsOk = true, Lines = lines };
+    public static ExplanationResult Ok(List<ExplanationLine> lines)
+    {
+        return new ExplanationResult { IsOk = true, Lines = lines };
+    }
 
-    public static ExplanationResult BuildFailed(string output) =>
-        new() { IsOk = false, ErrorMessage = $"Build failed (invalid pattern?)\n{output}" };
+    public static ExplanationResult BuildFailed(string output)
+    {
+        return new ExplanationResult { IsOk = false, ErrorMessage = $"Build failed (invalid pattern?)\n{output}" };
+    }
 
-    public static ExplanationResult NotFound() =>
-        new() { IsOk = false, ErrorMessage = "Source generator produced no explanation for this pattern." };
+    public static ExplanationResult NotFound()
+    {
+        return new ExplanationResult
+            { IsOk = false, ErrorMessage = "Source generator produced no explanation for this pattern." };
+    }
 
-    public static ExplanationResult Unexpected(Exception ex) =>
-        new() { IsOk = false, ErrorMessage = $"Explanation unavailable: {ex.Message}" };
+    public static ExplanationResult Unexpected(Exception ex)
+    {
+        return new ExplanationResult { IsOk = false, ErrorMessage = $"Explanation unavailable: {ex.Message}" };
+    }
 }
 
 public sealed record ExplanationLine(string Text, int IndentLevel);

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
+using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RegexTester.Models;
@@ -29,6 +30,21 @@ public partial class MainWindowViewModel : ViewModelBase
     private bool _isExplaining;
 
     [ObservableProperty]
+    private bool _isLeftSidebarOpen = true;
+
+    [ObservableProperty]
+    private bool _isRightSidebarOpen = true;
+
+    private double _lastLeftSidebarWidth = 320;
+    private double _lastRightSidebarWidth = 360;
+
+    [ObservableProperty]
+    private GridLength _leftSidebarColumnWidth = new(320, GridUnitType.Pixel);
+
+    [ObservableProperty]
+    private GridLength _leftSplitterColumnWidth = new(5, GridUnitType.Pixel);
+
+    [ObservableProperty]
     private string _matchSummary = "";
 
     [ObservableProperty]
@@ -39,6 +55,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string? _regexError;
+
+    [ObservableProperty]
+    private GridLength _rightSidebarColumnWidth = new(360, GridUnitType.Pixel);
+
+    [ObservableProperty]
+    private GridLength _rightSplitterColumnWidth = new(5, GridUnitType.Pixel);
 
     [ObservableProperty]
     private bool _singleline;
@@ -62,7 +84,10 @@ public partial class MainWindowViewModel : ViewModelBase
         ScheduleExplain();
     }
 
-    partial void OnTestStringChanged(string value) => UpdateMatches();
+    partial void OnTestStringChanged(string value)
+    {
+        UpdateMatches();
+    }
 
     partial void OnIgnoreCaseChanged(bool value)
     {
@@ -86,6 +111,50 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         UpdateMatches();
         ScheduleExplain();
+    }
+
+    partial void OnIsLeftSidebarOpenChanged(bool value)
+    {
+        if (value)
+        {
+            LeftSidebarColumnWidth = new GridLength(_lastLeftSidebarWidth, GridUnitType.Pixel);
+            LeftSplitterColumnWidth = new GridLength(5, GridUnitType.Pixel);
+
+            return;
+        }
+
+        LeftSidebarColumnWidth = new GridLength(0, GridUnitType.Pixel);
+        LeftSplitterColumnWidth = new GridLength(0, GridUnitType.Pixel);
+    }
+
+    partial void OnIsRightSidebarOpenChanged(bool value)
+    {
+        if (value)
+        {
+            RightSidebarColumnWidth = new GridLength(_lastRightSidebarWidth, GridUnitType.Pixel);
+            RightSplitterColumnWidth = new GridLength(5, GridUnitType.Pixel);
+
+            return;
+        }
+
+        RightSidebarColumnWidth = new GridLength(0, GridUnitType.Pixel);
+        RightSplitterColumnWidth = new GridLength(0, GridUnitType.Pixel);
+    }
+
+    partial void OnLeftSidebarColumnWidthChanged(GridLength value)
+    {
+        if (IsLeftSidebarOpen && value.IsAbsolute && value.Value > 0)
+        {
+            _lastLeftSidebarWidth = value.Value;
+        }
+    }
+
+    partial void OnRightSidebarColumnWidthChanged(GridLength value)
+    {
+        if (IsRightSidebarOpen && value.IsAbsolute && value.Value > 0)
+        {
+            _lastRightSidebarWidth = value.Value;
+        }
     }
 
     private void UpdateMatches()
@@ -113,15 +182,15 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        var groupNames = regex.GetGroupNames();
-        var rawLines = (TestString ?? "").Split('\n');
+        string[] groupNames = regex.GetGroupNames();
+        string[] rawLines = (TestString ?? "").Split('\n');
 
         var totalMatches = 0;
         var matchedLines = 0;
 
         for (var i = 0; i < rawLines.Length; i++)
         {
-            var line = rawLines[i].TrimEnd('\r');
+            string line = rawLines[i].TrimEnd('\r');
             MatchCollection matches;
             try
             {
@@ -164,7 +233,7 @@ public partial class MainWindowViewModel : ViewModelBase
             });
         }
 
-        var lines = rawLines.Length;
+        int lines = rawLines.Length;
         MatchSummary = totalMatches switch
                        {
                            0 => "No matches found",

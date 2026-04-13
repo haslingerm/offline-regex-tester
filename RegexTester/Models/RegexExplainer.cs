@@ -19,6 +19,10 @@ public static class RegexExplainer
 
     private static readonly SemaphoreSlim @lock = new(1, 1);
 
+    // Cached async detection: runs once, result is reused for the lifetime of the process.
+    private static readonly Lazy<Task<string?>> _tfmDetection =
+        new(() => DetectTfmAsync(CancellationToken.None));
+
     public static async Task<ExplanationResult> ExplainAsync(
         string pattern,
         RegexOptions options,
@@ -30,7 +34,13 @@ public static class RegexExplainer
         {
             try
             {
-                EnsureScratchProject();
+                string? tfm = await _tfmDetection.Value;
+                if (tfm == null)
+                {
+                    return ExplanationResult.RuntimeTooOld();
+                }
+
+                EnsureScratchProject(tfm);
                 WriteSourceFile(pattern, options);
 
                 (int exitCode, string buildOutput) = await RunBuildAsync(ct);
@@ -44,7 +54,7 @@ public static class RegexExplainer
                     return ExplanationResult.BuildFailed(buildOutput);
                 }
 
-                List<ExplanationLine> lines = ParseGeneratedFile();
+                List<ExplanationLine> lines = ParseGeneratedFile(tfm);
 
                 return lines.Count > 0
                     ? ExplanationResult.Ok(lines)
@@ -65,25 +75,64 @@ public static class RegexExplainer
         }
     }
 
-    private static void EnsureScratchProject()
+    private static async Task<string?> DetectTfmAsync(CancellationToken ct)
+    {
+        try
+        {
+            var result = await Cli.Wrap("dotnet")
+                                  .WithArguments(["--list-sdks"])
+                                  .WithValidation(CommandResultValidation.None)
+                                  .ExecuteBufferedAsync(ct);
+
+            if (result.ExitCode != 0)
+            {
+                return null;
+            }
+
+            // Each line looks like: "9.0.100 [/path/to/sdk]"
+            var highestMajor = 0;
+            foreach (string line in result.StandardOutput.Split('\n'))
+            {
+                string trimmed = line.Trim();
+                if (string.IsNullOrEmpty(trimmed))
+                {
+                    continue;
+                }
+
+                string versionStr = trimmed.Split(' ', 2)[0];
+                if (Version.TryParse(versionStr, out var version) && version.Major >= 9)
+                {
+                    highestMajor = Math.Max(highestMajor, version.Major);
+                }
+            }
+
+            return highestMajor >= 9 ? $"net{highestMajor}.0" : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static void EnsureScratchProject(string tfm)
     {
         Directory.CreateDirectory(scratchDir);
         string csproj = Path.Combine(scratchDir, "Scratch.csproj");
-        if (File.Exists(csproj))
-        {
-            return;
-        }
 
-        File.WriteAllText(csproj, """
-                                  <Project Sdk="Microsoft.NET.Sdk">
-                                    <PropertyGroup>
-                                      <TargetFramework>net10.0</TargetFramework>
-                                      <Nullable>enable</Nullable>
-                                      <ImplicitUsings>enable</ImplicitUsings>
-                                      <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-                                    </PropertyGroup>
-                                  </Project>
-                                  """);
+        // Always write (or overwrite) the csproj so that a stale file from a previous
+        // installation with a different TFM is corrected on the next run.
+        // Since the TFM is detected once per process lifetime the file content is
+        // stable during a single session; redundant writes are cheap for a tiny file.
+        File.WriteAllText(csproj, $"""
+                                   <Project Sdk="Microsoft.NET.Sdk">
+                                     <PropertyGroup>
+                                       <TargetFramework>{tfm}</TargetFramework>
+                                       <Nullable>enable</Nullable>
+                                       <ImplicitUsings>enable</ImplicitUsings>
+                                       <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+                                     </PropertyGroup>
+                                   </Project>
+                                   """);
     }
 
     private static void WriteSourceFile(string pattern, RegexOptions options)
@@ -160,14 +209,14 @@ public static class RegexExplainer
     ///   /// </code>
     /// </code>
     /// </summary>
-    private static List<ExplanationLine> ParseGeneratedFile()
+    private static List<ExplanationLine> ParseGeneratedFile(string tfm)
     {
         // The generator writes to this fixed path (relative to ScratchDir):
-        //   obj/Debug/net10.0/generated/
+        //   obj/Debug/{tfm}/generated/
         //     System.Text.RegularExpressions.Generator/
         //       System.Text.RegularExpressions.Generator.RegexGenerator/
         //         RegexGenerator.g.cs
-        string generatedDir = Path.Combine(scratchDir, "obj", "Debug", "net10.0", "generated",
+        string generatedDir = Path.Combine(scratchDir, "obj", "Debug", tfm, "generated",
                                            "System.Text.RegularExpressions.Generator",
                                            "System.Text.RegularExpressions.Generator.RegexGenerator");
 
@@ -263,6 +312,9 @@ public sealed class ExplanationResult
     public string? ErrorMessage { get; private init; }
 
     public static ExplanationResult Ok(List<ExplanationLine> lines) => new() { IsOk = true, Lines = lines };
+
+    public static ExplanationResult RuntimeTooOld() =>
+        new() { IsOk = false, ErrorMessage = "This feature requires the .NET 9 SDK (or later) to be installed on this system." };
 
     public static ExplanationResult BuildFailed(string output) =>
         new() { IsOk = false, ErrorMessage = $"Build failed (invalid pattern?)\n{output}" };

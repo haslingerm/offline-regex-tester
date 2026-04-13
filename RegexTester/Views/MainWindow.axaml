@@ -111,7 +111,8 @@
                          Watermark="Enter regular expression…"
                          BorderThickness="1"
                          CornerRadius="4"
-                         Padding="10,6" />
+                         Padding="10,6"
+                         InputMethod.IsInputMethodEnabled="False" />
 
                 <!-- Error display -->
                 <Border IsVisible="{Binding HasError}"
